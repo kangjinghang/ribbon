@@ -38,7 +38,7 @@ public interface ILoadBalancer {
 	 * 
 	 * @param newServers new servers to add
 	 */
-	public void addServers(List<Server> newServers);
+	public void addServers(List<Server> newServers); // 向负载均衡器中添加一个新的服务实例列表
 	
 	/**
 	 * Choose a server from load balancer.
@@ -47,7 +47,7 @@ public interface ILoadBalancer {
 	 *         the load balancer does not use this parameter.
 	 * @return server chosen
 	 */
-	public Server chooseServer(Object key);
+	public Server chooseServer(Object key); // 从负载均衡器中挑选出一个具体的服务实例
 	
 	/**
 	 * To be called by the clients of the load balancer to notify that a Server is down
@@ -56,7 +56,7 @@ public interface ILoadBalancer {
 	 * 
 	 * @param server Server to mark as down
 	 */
-	public void markServerDown(Server server);
+	public void markServerDown(Server server); // 用来通知和标记负载均衡器中的某个具体实例已经停止服务，不然负载均衡器在下一次获取服务实例清单前都会认为服务实例均是正常服务的
 	
 	/**
 	 * @deprecated 2016-01-20 This method is deprecated in favor of the
@@ -73,10 +73,10 @@ public interface ILoadBalancer {
 	/**
 	 * @return Only the servers that are up and reachable.
      */
-    public List<Server> getReachableServers();
+    public List<Server> getReachableServers(); // 获取所有有效的服务实例列表
 
     /**
      * @return All known servers, both reachable and unreachable.
      */
-	public List<Server> getAllServers();
+	public List<Server> getAllServers(); // 获取所有服务的实例列表
 }

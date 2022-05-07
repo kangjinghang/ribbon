@@ -22,7 +22,7 @@ package com.netflix.loadbalancer;
  * @author stonse
  *
  */
-public class NoOpPing implements IPing {
+public class NoOpPing implements IPing { // 不去 ping，直接返回 true，即可用
 
     @Override
     public boolean isAlive(Server server) {

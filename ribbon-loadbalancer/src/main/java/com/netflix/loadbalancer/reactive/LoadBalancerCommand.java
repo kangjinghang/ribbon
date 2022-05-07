@@ -176,7 +176,7 @@ public class LoadBalancerCommand<T> {
      * Return an Observable that either emits only the single requested server
      * or queries the load balancer for the next server on each subscription
      */
-    private Observable<Server> selectServer() {
+    private Observable<Server> selectServer() { // 负载均衡
         return Observable.create(new OnSubscribe<Server>() {
             @Override
             public void call(Subscriber<? super Server> next) {

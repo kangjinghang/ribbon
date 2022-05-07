@@ -79,8 +79,8 @@ public class AvailabilityPredicate extends  AbstractServerPredicate {
         }
         return limit;
     }
-
-    @Override
+    // 它并没有像父类中那样，先遍历所有的节点进行过滤，然后在过滤后的集合中选择实例。而是先线性的方式选择一个实例，接着用过滤条件来判断该实例是否满足要求，若满足就直接使用该实例，若不满足要求就再选择下一个实例，并检查是否满足要求，如此循环进行，当这个过程重复了10次还是没有找到符合要求的实例，就采用父类的实现方案。
+    @Override // 简单的说，该策略通过线性抽样的方式直接尝试寻找可用且较空闲的实例来使用，优化了父类每次都要遍历所有实例的开销。
     public boolean apply(@Nullable PredicateKey input) {
         LoadBalancerStats stats = getLBStats();
         if (stats == null) {
@@ -90,8 +90,8 @@ public class AvailabilityPredicate extends  AbstractServerPredicate {
     }
     
     private boolean shouldSkipServer(ServerStats stats) {
-        if ((circuitBreakerFiltering.getOrDefault() && stats.isCircuitBreakerTripped())
-                || stats.getActiveRequestsCount() >= getActiveConnectionsLimit()) {
+        if ((circuitBreakerFiltering.getOrDefault() && stats.isCircuitBreakerTripped()) // 是否故障，即断路器是否生效已断开
+                || stats.getActiveRequestsCount() >= getActiveConnectionsLimit()) { // 实例的并发请求数大于阈值，默认值为 2^31 - 1，该配置我们可通过参数 ActiveConnectionsLimit 来修改 其中只要有一个满足 apply 就返回false（代表该节点可能存在故障或负载过高），都不满足就返回 true
             return true;
         }
         return false;

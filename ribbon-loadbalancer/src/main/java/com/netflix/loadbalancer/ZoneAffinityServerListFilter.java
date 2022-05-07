@@ -41,7 +41,11 @@ import java.util.List;
  * and exclusivity are turned off and nothing is filtered out.
  * 
  * @author stonse
- *
+ * 该过滤器基于”区域感知”(Zone Affinity)的方式实现服务实例的过滤，它会根据提供服务的实例所在的区域(Zone)与消费者自身所在的区域(Zone)进行比较，过滤掉那些不是在同一区域的实例。
+ * 需要注意的是，该过滤器还会通过 shouldEnableZoneAffinity(List) 方法来判断是否要启用”区域感知”的功能，它使用了 LoadBalancerStats 的 getZoneSnapshot 方法来获取这些过滤后的同区域实例的基础指标(包含实例数、断路器断开数、清动请求数、实例平均负载等)，根据一系列的算法得出下面同筱评价值并与阈值进行对比，若有一个条件符合，就不启用”区域感知”过滤后的服务实例清单。目的是集群出现区域故障时，依然可以依靠其它区域的正常实例提供服务，保障高可用。
+ * 1､故障实例百分比(断路器断开数/实例数)>=0.8
+ * 2､实例平均负载>=0.6
+ * 3､可用实例数(实例数-数路器断开数)<2
  */
 public class ZoneAffinityServerListFilter<T extends Server> extends
         AbstractServerListFilter<T> implements IClientConfigAware {
@@ -90,7 +94,7 @@ public class ZoneAffinityServerListFilter<T extends Server> extends
 
         Monitors.registerObject("NIWSServerListFilter_" + niwsClientConfig.getClientName());
     }
-    
+    // 判断是否要启用“区域感知”的功能。使用了 LoadBalancerStats 的 getZoneSnapshot 方法来获取这些过滤后的同区域实例的基础指标（包含了：实例数量、断路器断开数、活动请求数、实例平均负载等），根据一系列的算法求出下面的几个评价值并与设置的阈值对比（下面的为默认值），若有一个条件符合，就不启用“区域感知”过滤的服务实例清单。
     private boolean shouldEnableZoneAffinity(List<T> filtered) {    
         if (!zoneAffinity && !zoneExclusive) {
             return false;
@@ -101,12 +105,12 @@ public class ZoneAffinityServerListFilter<T extends Server> extends
         LoadBalancerStats stats = getLoadBalancerStats();
         if (stats == null) {
             return zoneAffinity;
-        } else {
+        } else { // 这个算法实现对于集群出现区域故障时，依然可以依靠其他区域的实例进行正常服务提供了完善的高可用保障
             logger.debug("Determining if zone affinity should be enabled with given server list: {}", filtered);
             ZoneSnapshot snapshot = stats.getZoneSnapshot(filtered);
-            double loadPerServer = snapshot.getLoadPerServer();
-            int instanceCount = snapshot.getInstanceCount();            
-            int circuitBreakerTrippedCount = snapshot.getCircuitTrippedCount();
+            double loadPerServer = snapshot.getLoadPerServer(); // activeReqeustsPerServer：实例平均负载 >= 0.6
+            int instanceCount = snapshot.getInstanceCount();  // availableServers：可用实例数（实例数量 - 断路器断开数） < 2
+            int circuitBreakerTrippedCount = snapshot.getCircuitTrippedCount(); // blackOutServerPercentage：故障实例百分比（断路器断开数 / 实例数量） >= 0.8
             if (((double) circuitBreakerTrippedCount) / instanceCount >= blackOutServerPercentageThreshold.getOrDefault()
                     || loadPerServer >= activeReqeustsPerServerThreshold.getOrDefault()
                     || (instanceCount - circuitBreakerTrippedCount) < availableServersThreshold.getOrDefault()) {
@@ -124,8 +128,8 @@ public class ZoneAffinityServerListFilter<T extends Server> extends
     public List<T> getFilteredListOfServers(List<T> servers) {
         if (zone != null && (zoneAffinity || zoneExclusive) && servers !=null && servers.size() > 0){
             List<T> filteredServers = Lists.newArrayList(Iterables.filter(
-                    servers, this.zoneAffinityPredicate.getServerOnlyPredicate()));
-            if (shouldEnableZoneAffinity(filteredServers)) {
+                    servers, this.zoneAffinityPredicate.getServerOnlyPredicate())); // 判断依据由 ZoneAffinityPredicate 实现服务实例与消费者的 Zone 比较
+            if (shouldEnableZoneAffinity(filteredServers)) { // 过滤之后，这里并不会马上返回过滤的结果，而是通过 shouldEnableZoneAffinity 方法来判断是否要启用“区域感知”的功能
                 return filteredServers;
             } else if (zoneAffinity) {
                 overrideCounter.increment();

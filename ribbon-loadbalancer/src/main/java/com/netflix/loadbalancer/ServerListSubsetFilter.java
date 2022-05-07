@@ -36,11 +36,14 @@ import java.util.Set;
  * of relatively unhealthy servers by comparing the total network failures and concurrent connections. 
  *  
  * @author awang
- *
+ * 也继承自ZoneAffinityServerListFilter，该过滤器适用于大规模服务器集群(上百或更多)的系统，因为它可以产生一个”区域感知”结果的子集列表，同时它还能够通过比较服务实例的通信失败数和并发连接数来判定该服务是否健康来选择性的从服务实例列表中剔除那些相对不够健康的实例
  * @param <T>
  */
 public class ServerListSubsetFilter<T extends Server> extends ZoneAffinityServerListFilter<T> implements IClientConfigAware, Comparator<T>{
-
+    // 该过滤器的实现主要分为三步：
+    // 获取“区域感知”的过滤结果，来作为候选的服务实例清单
+    // 从当前消费者维护的服务实例子集中剔除那些相对不够健康的实例（同时也将这些实例从候选清单中剔除，防止第三步的时候又被选入），不够健康的标准如下： a. 服务实例的并发连接数超过客户端配置的值，默认为0，配置参数为：<clientName>.<nameSpace>.ServerListSubsetFilter.eliminationConnectionThresold b. 服务实例的失败数超过客户端配置的值，默认为0，配置参数为：<clientName>.<nameSpace>.ServerListSubsetFilter.eliminationFailureThresold c. 如果按符合上面任一规则的服务实例剔除后，剔除比例小于客户端默认配置的百分比，默认为0.1（10%），配置参数为：<clientName>.<nameSpace>.ServerListSubsetFilter.forceEliminatePercent。那么就先对剩下的实例列表进行健康排序，再开始从最不健康实例进行剔除，直到达到配置的剔除百分比。
+    // 在完成剔除后，清单已经少了至少10%（默认值）的服务实例，最后通过随机的方式从候选清单中选出一批实例加入到清单中，以保持服务实例子集与原来的数量一致，而默认的实例子集数量为20，其配置参数为：<clientName>.<nameSpace>.ServerListSubsetFilter.size。
     private Random random = new Random();
     private volatile Set<T> currentSubset = Sets.newHashSet(); 
     private Property<Integer> sizeProp;

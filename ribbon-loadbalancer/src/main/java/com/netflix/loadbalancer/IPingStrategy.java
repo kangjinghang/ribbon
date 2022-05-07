@@ -11,7 +11,7 @@ package com.netflix.loadbalancer;
  * @see Server
  * @see IPing
  */
-public interface IPingStrategy {
+public interface IPingStrategy { // 检查服务实例操作的执行策略对象
 
     boolean[] pingServers(IPing ping, Server[] servers);
 }

@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author David Liu
  */
-public class PollingServerListUpdater implements ServerListUpdater {
+public class PollingServerListUpdater implements ServerListUpdater { // DynamicServerListLoadBalancer 默认的策略，它是通过定时任务的方式进行服务列表的更新
 
     private static final Logger logger = LoggerFactory.getLogger(PollingServerListUpdater.class);
 
@@ -73,17 +73,17 @@ public class PollingServerListUpdater implements ServerListUpdater {
                     return;
                 }
                 try {
-                    updateAction.doUpdate();
+                    updateAction.doUpdate(); // 最终也会调用 updateListOfServers(); 方法
                     lastUpdated = System.currentTimeMillis();
                 } catch (Exception e) {
                     logger.warn("Failed one update cycle", e);
                 }
             };
-
+            // 启动一个定时器，每隔30秒执行一次 updateListOfServers() 方法。
             scheduledFuture = getRefreshExecutor().scheduleWithFixedDelay(
-                    wrapperRunnable,
-                    initialDelayMs,
-                    refreshIntervalMs,
+                    wrapperRunnable, // 任务
+                    initialDelayMs, // 初始延迟时间：默认1秒
+                    refreshIntervalMs, // 周期执行时间间隔，默认30秒
                     TimeUnit.MILLISECONDS
             );
         } else {

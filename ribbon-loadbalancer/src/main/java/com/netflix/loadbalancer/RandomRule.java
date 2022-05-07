@@ -29,7 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author stonse
  * 
  */
-public class RandomRule extends AbstractLoadBalancerRule {
+public class RandomRule extends AbstractLoadBalancerRule { // 随机选择
 
     /**
      * Randomly choose from all living servers

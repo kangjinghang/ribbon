@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author <a href="mailto:nikos@netflix.com">Nikos Michalakis</a>
  *
  */
-public class RoundRobinRule extends AbstractLoadBalancerRule {
+public class RoundRobinRule extends AbstractLoadBalancerRule { // 线性轮询
 
     private AtomicInteger nextServerCyclicCounter;
     private static final boolean AVAILABLE_ONLY_SERVERS = true;
@@ -97,7 +97,7 @@ public class RoundRobinRule extends AbstractLoadBalancerRule {
      * @param modulo The modulo to bound the value of the counter.
      * @return The next value.
      */
-    private int incrementAndGetModulo(int modulo) {
+    private int incrementAndGetModulo(int modulo) { // 对服务列表总数进行取模运算，得到服务下标索引
         for (;;) {
             int current = nextServerCyclicCounter.get();
             int next = (current + 1) % modulo;

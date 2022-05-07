@@ -23,7 +23,7 @@ package com.netflix.loadbalancer;
  * @author stonse
  *
  */
-public class PingConstant implements IPing {
+public class PingConstant implements IPing { // 固定值返回某服务是否可用，默认返回 true，即可用
 		boolean constant = true;
 
 		public void setConstant(String constantStr) {

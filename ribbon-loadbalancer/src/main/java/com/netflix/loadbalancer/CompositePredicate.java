@@ -38,9 +38,9 @@ import com.google.common.collect.Lists;
  *
  */
 public class CompositePredicate extends AbstractServerPredicate {
-
+    // 主过滤条件
     private AbstractServerPredicate delegate;
-    
+    // 次过滤条件列表。次过滤列表是可以拥有多个的，并且由于它采用了 List 存储所以次过滤条件是按顺序执行的
     private List<AbstractServerPredicate> fallbacks = Lists.newArrayList();
         
     private int minimalFilteredServers = 1;
@@ -100,12 +100,12 @@ public class CompositePredicate extends AbstractServerPredicate {
      * Get the filtered servers from primary predicate, and if the number of the filtered servers
      * are not enough, trying the fallback predicates  
      */
-    @Override
+    @Override // 使用主过滤条件对所有实例过滤并返回过滤后的实例清单
     public List<Server> getEligibleServers(List<Server> servers, Object loadBalancerKey) {
         List<Server> result = super.getEligibleServers(servers, loadBalancerKey);
-        Iterator<AbstractServerPredicate> i = fallbacks.iterator();
-        while (!(result.size() >= minimalFilteredServers && result.size() > (int) (servers.size() * minimalFilteredPercentage))
-                && i.hasNext()) {
+        Iterator<AbstractServerPredicate> i = fallbacks.iterator(); // 每次过滤之后（包括主过滤条件和次过滤条件），都需要判断下面两个条件，只要有一个符合就不再进行过滤，将当前结果返回供线性轮询算法选择：
+        while (!(result.size() >= minimalFilteredServers && result.size() > (int) (servers.size() * minimalFilteredPercentage)) // 过滤后的实例总数 >= 最小过滤实例数（minimalFilteredServers，默认为1）&& 过滤后的实例比例 > 最小过滤百分比（minimalFilteredPercentage，默认为0）
+                && i.hasNext()) { // 依次使用次过滤条件列表中的过滤条件对主过滤条件的结果进行过滤
             AbstractServerPredicate predicate = i.next();
             result = predicate.getEligibleServers(servers, loadBalancerKey);
         }

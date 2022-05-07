@@ -43,9 +43,9 @@ import java.io.IOException;
  * Choose your Ping based on your needs.
  * 
  * @author stonse
- * 
+ * ribbon-httpclient 包中提供的类。采用此方式，会使用 httpclient 调用服务的一个url，如果调用成功则认为本次心跳检测通过，即服务存活可用。
  */
-public class PingUrl implements IPing {
+public class PingUrl implements IPing { // 真实的去 ping 某个 url，判断其是否 alive
     private static final Logger LOGGER = LoggerFactory.getLogger(PingUrl.class);
 
 		String pingAppendString = "";
@@ -125,7 +125,7 @@ public class PingUrl implements IPing {
 				try {
 					HttpResponse response = httpClient.execute(getRequest);
 					content = EntityUtils.toString(response.getEntity());
-					isAlive = (response.getStatusLine().getStatusCode() == 200);
+					isAlive = (response.getStatusLine().getStatusCode() == 200); // 发起的是 HTTP 请求，然后根据返回的状态码进行判断
 					if (getExpectedContent()!=null){
 						LOGGER.debug("content:" + content);
 						if (content == null){

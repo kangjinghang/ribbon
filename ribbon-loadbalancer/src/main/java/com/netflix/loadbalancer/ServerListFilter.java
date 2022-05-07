@@ -27,7 +27,7 @@ import java.util.List;
  * 
  * @param <T>
  */
-public interface ServerListFilter<T extends Server> {
+public interface ServerListFilter<T extends Server> { // 主要用于实现服务实例列表的过滤，通过传入服务实例清单，根据一些规则返回过滤后的服务实例清单
 
     public List<T> getFilteredListOfServers(List<T> servers);
 

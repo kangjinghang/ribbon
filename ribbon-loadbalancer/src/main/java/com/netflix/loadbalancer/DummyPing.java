@@ -25,7 +25,7 @@ import com.netflix.client.config.IClientConfig;
  * @author stonse
  * 
  */
-public class DummyPing extends AbstractLoadBalancerPing {
+public class DummyPing extends AbstractLoadBalancerPing { // 不去 ping，直接返回 true，即可用
 
     public DummyPing() {
     }

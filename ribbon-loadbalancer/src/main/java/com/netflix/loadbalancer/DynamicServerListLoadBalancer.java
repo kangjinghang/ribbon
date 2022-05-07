@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * meet the desired criteria.
  * 
  * @author stonse
- * 
+ * 对基础负载均衡器做了扩展，主要是实现了服务实例清单在运行期间的动态更新能力，同时提供了对服务实例清单的过滤功能，也就是说可以通过过滤器来选择获取一批服务实例清单。
  */
 public class DynamicServerListLoadBalancer<T extends Server> extends BaseLoadBalancer {
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicServerListLoadBalancer.class);
@@ -138,9 +138,9 @@ public class DynamicServerListLoadBalancer<T extends Server> extends BaseLoadBal
         boolean primeConnection = this.isEnablePrimingConnections();
         // turn this off to avoid duplicated asynchronous priming done in BaseLoadBalancer.setServerList()
         this.setEnablePrimingConnections(false);
-        enableAndInitLearnNewServersFeature();
+        enableAndInitLearnNewServersFeature(); // 1.开启定时器
 
-        updateListOfServers();
+        updateListOfServers(); // 2.更新服务列表
         if (primeConnection && this.getPrimeConnections() != null) {
             this.getPrimeConnections()
                     .primeConnections(getReachableServers());
@@ -152,7 +152,7 @@ public class DynamicServerListLoadBalancer<T extends Server> extends BaseLoadBal
     
     @Override
     public void setServersList(List lsrv) {
-        super.setServersList(lsrv);
+        super.setServersList(lsrv); // 调用父类 BaseLoadBalancer 的方法
         List<T> serverList = (List<T>) lsrv;
         Map<String, List<Server>> serversInZones = new HashMap<String, List<Server>>();
         for (Server server : serverList) {
@@ -172,7 +172,7 @@ public class DynamicServerListLoadBalancer<T extends Server> extends BaseLoadBal
         }
         setServerListForZones(serversInZones);
     }
-
+    // 是根据按区域 Zone 分组的实例列表，为负载均衡器中的 LoadBalancerStats 对象创建 ZoneStats 并放入 Map zoneStatsMap 集合中，每一个区域 Zone 会对应一个 ZoneStats，它用于存储每个 Zone 的一些状态和统计信息。
     protected void setServerListForZones(
             Map<String, List<Server>> zoneServersMap) {
         LOGGER.debug("Setting server list for zones: {}", zoneServersMap);
@@ -246,7 +246,7 @@ public class DynamicServerListLoadBalancer<T extends Server> extends BaseLoadBal
                         getIdentifier(), servers);
             }
         }
-        updateAllServerList(servers);
+        updateAllServerList(servers); // 然后将获取到的服务列表 serverListImpl 传入 updateAllServerList 方法，进行更新成员变量
     }
 
     /**
@@ -254,16 +254,16 @@ public class DynamicServerListLoadBalancer<T extends Server> extends BaseLoadBal
      * 
      * @param ls
      */
-    protected void updateAllServerList(List<T> ls) {
+    protected void updateAllServerList(List<T> ls) { // 更新成员变量
         // other threads might be doing this - in which case, we pass
         if (serverListUpdateInProgress.compareAndSet(false, true)) {
             try {
                 for (T s : ls) {
-                    s.setAlive(true); // set so that clients can start using these
+                    s.setAlive(true); // set so that clients can start using these // 设置服务状态为活跃状态
                                       // servers right away instead
                                       // of having to wait out the ping cycle.
                 }
-                setServersList(ls);
+                setServersList(ls); // 更新服务列表
                 super.forceQuickPing();
             } finally {
                 serverListUpdateInProgress.set(false);

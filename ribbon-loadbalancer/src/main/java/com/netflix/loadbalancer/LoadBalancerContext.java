@@ -477,7 +477,7 @@ public class LoadBalancerContext implements IClientConfigAware {
             // Partial URI or no URI Case
             // well we have to just get the right instances from lb - or we fall back
             if (lb != null){
-                Server svc = lb.chooseServer(loadBalancerKey);
+                Server svc = lb.chooseServer(loadBalancerKey); // 负载均衡
                 if (svc == null){
                     throw new ClientException(ClientException.ErrorType.GENERAL,
                             "Load balancer does not have available server for client: "

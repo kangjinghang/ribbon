@@ -41,7 +41,7 @@ import com.netflix.servo.annotations.Monitor;
  * <p>
  *   
  * @author awang
- *
+ * 基于服务有效性原则，使用 AvailabilityPredicate 类来过滤服务列表。过滤掉多次访问失败而处于断路状态的服务实例。过滤掉并发的连接数量超过阈值的服务实例。过滤完成按照RoundRobinRule策略访问
  */
 public class AvailabilityFilteringRule extends PredicateBasedRule {    
 

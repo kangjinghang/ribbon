@@ -31,7 +31,7 @@ import javax.inject.Inject;
  *
  * Created by awang on 7/18/14.
  */
-public abstract class RibbonTransportFactory {
+public abstract class RibbonTransportFactory { // 这个模块中提供的功能实际上是没有用于生产环境中使用的。支持http、tcp、udp协议。采用rxnetty实现。
     protected final ClientConfigFactory clientConfigFactory;
 
     public static class DefaultRibbonTransportFactory extends RibbonTransportFactory {

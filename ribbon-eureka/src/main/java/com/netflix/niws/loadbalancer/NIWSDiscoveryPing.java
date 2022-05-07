@@ -31,11 +31,11 @@ import com.netflix.loadbalancer.Server;
  * "Ping" Discovery Client
  * i.e. we dont do a real "ping". We just assume that the server is up if Discovery Client says so
  * @author stonse
- *
+ * ribbon-eureka 包中提供的类，结合 eureka 使用时，如果 Discovery Client 在线，则认为心跳检测通过。
  */
-public class NIWSDiscoveryPing extends AbstractLoadBalancerPing {
-	        
-		BaseLoadBalancer lb = null; 
+public class NIWSDiscoveryPing extends AbstractLoadBalancerPing { // 根据 DiscoveryEnabledServer 的 InstanceInfo 的 InstanceStatus 去判断，如果为 InstanceStatus.UP，则为可用，否则不可用
+
+	BaseLoadBalancer lb = null;
 		
 
 		public NIWSDiscoveryPing() {

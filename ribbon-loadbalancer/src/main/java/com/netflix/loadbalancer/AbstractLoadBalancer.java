@@ -29,7 +29,7 @@ import java.util.List;
  * Class that defines and implements a mechanism to determine the
  * suitability/availability of the nodes/servers in the List.
  * 
- * 
+ * 定义了一个关于服务实例的分组枚举，包含了三种类型的服务：ALL 表示所有服务，STATUS_UP 表示正常运行的服务，STATUS_NOT_UP 表示下线的服务
  * @author stonse
  * 
  */

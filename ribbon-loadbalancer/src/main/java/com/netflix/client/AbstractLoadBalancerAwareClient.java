@@ -76,7 +76,7 @@ public abstract class AbstractLoadBalancerAwareClient<S extends ClientRequest, T
         } 
         return false;
     }
-    
+    // 通过负载均衡客户端，执行负载均衡处理
     public T executeWithLoadBalancer(S request) throws ClientException {
         return executeWithLoadBalancer(request, null);
     }
@@ -90,18 +90,18 @@ public abstract class AbstractLoadBalancerAwareClient<S extends ClientRequest, T
      * @param request request to be dispatched to a server chosen by the load balancer. The URI can be a partial
      * URI which does not contain the host name or the protocol.
      */
-    public T executeWithLoadBalancer(final S request, final IClientConfig requestConfig) throws ClientException {
-        LoadBalancerCommand<T> command = buildLoadBalancerCommand(request, requestConfig);
+    public T executeWithLoadBalancer(final S request, final IClientConfig requestConfig) throws ClientException { // 通过负载均衡客户端，执行负载均衡处理
+        LoadBalancerCommand<T> command = buildLoadBalancerCommand(request, requestConfig); // 首先构建 LoadBalancerCommand 对象
 
         try {
-            return command.submit(
-                new ServerOperation<T>() {
+            return command.submit( // 然后调用 LoadBalancerCommand 的 submit 方法
+                new ServerOperation<T>() { // RxJava。创建ServerOperation对象，并实现了它的call方法。
                     @Override
-                    public Observable<T> call(Server server) {
-                        URI finalUri = reconstructURIWithServer(server, request.getUri());
+                    public Observable<T> call(Server server) { // 被负载均衡策略选中的 Server，包含了真实的 ip、port ...
+                        URI finalUri = reconstructURIWithServer(server, request.getUri());  // 根据服务实例重新构建一个由 ip+port 组成的 URI 对象
                         S requestForServer = (S) request.replaceUri(finalUri);
                         try {
-                            return Observable.just(AbstractLoadBalancerAwareClient.this.execute(requestForServer, requestConfig));
+                            return Observable.just(AbstractLoadBalancerAwareClient.this.execute(requestForServer, requestConfig)); // 最后执行 execute 方法发起远程调用
                         } 
                         catch (Exception e) {
                             return Observable.error(e);

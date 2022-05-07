@@ -67,8 +67,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * will fall back to use {@link RoundRobinRule}. 
  * @author stonse
  */
-public class WeightedResponseTimeRule extends RoundRobinRule {
-
+public class WeightedResponseTimeRule extends RoundRobinRule { // 根据响应时间去分配 Weight，Weight 越高，被选择的可能性就越大
+    // 基于响应时间的权重计算方法： weight = total responseTime - responseTime。响应时间越快，服务权重越大。当服务器没有足够的统计信息时（如刚启动时）使用轮询策略
     public static final IClientConfigKey<Integer> WEIGHT_TASK_TIMER_INTERVAL_CONFIG_KEY = new IClientConfigKey<Integer>() {
         @Override
         public String key() {
@@ -94,7 +94,7 @@ public class WeightedResponseTimeRule extends RoundRobinRule {
     
     // holds the accumulated weight from index 0 to current index
     // for example, element at index 2 holds the sum of weight of servers from 0 to 2
-    private volatile List<Double> accumulatedWeights = new ArrayList<Double>();
+    private volatile List<Double> accumulatedWeights = new ArrayList<Double>(); // 存储权重的对象。该List中每个权重值所处的位置对应了负载均衡器维护的服务实例清单中所有实例在清单中的位置
     
 
     private final Random random = new Random();
@@ -178,22 +178,22 @@ public class WeightedResponseTimeRule extends RoundRobinRule {
             }
 
             int serverIndex = 0;
-
+            // 获取最后一个实例的权重
             // last one in the list is the sum of all weights
             double maxTotalWeight = currentWeights.size() == 0 ? 0 : currentWeights.get(currentWeights.size() - 1); 
             // No server has been hit yet and total weight is not initialized
             // fallback to use round robin
-            if (maxTotalWeight < 0.001d || serverCount != currentWeights.size()) {
+            if (maxTotalWeight < 0.001d || serverCount != currentWeights.size()) { 	// 如果最后一个实例的权重值小于 0.001，则采用父类实现的线性轮询的策略
                 server =  super.choose(getLoadBalancer(), key);
                 if(server == null) {
                     return server;
                 }
             } else {
                 // generate a random weight between 0 (inclusive) to maxTotalWeight (exclusive)
-                double randomWeight = random.nextDouble() * maxTotalWeight;
+                double randomWeight = random.nextDouble() * maxTotalWeight; // 生产一个[0, 最大权重值)区间内的随机数。如果最后一个实例的权重值大于等于0.001，就产生一个[0, maxTotalWeight)的随机数
                 // pick the server index based on the randomIndex
                 int n = 0;
-                for (Double d : currentWeights) {
+                for (Double d : currentWeights) { // 遍历维护的权重清单，若权重大于等于随机得到的数值，就选择这个实例
                     if (d >= randomWeight) {
                         serverIndex = n;
                         break;
@@ -220,7 +220,7 @@ public class WeightedResponseTimeRule extends RoundRobinRule {
         }
         return server;
     }
-
+    // 启动一个定时任务，用来为每个服务实例计算权重，该任务默认 30 秒执行一次
     class DynamicServerWeightTask extends TimerTask {
         public void run() {
             ServerWeight serverWeight = new ServerWeight();
@@ -233,7 +233,7 @@ public class WeightedResponseTimeRule extends RoundRobinRule {
     }
 
     class ServerWeight {
-
+        // 维护实例权重的计算过程
         public void maintainWeights() {
             ILoadBalancer lb = getLoadBalancer();
             if (lb == null) {
@@ -254,7 +254,7 @@ public class WeightedResponseTimeRule extends RoundRobinRule {
                 }
                 double totalResponseTime = 0;
                 // find maximal 95% response time
-                for (Server server : nlb.getAllServers()) {
+                for (Server server : nlb.getAllServers()) { // 计算所有实例的平均响应时间的总和：totalResponseTime
                     // this will automatically load the stats if not in cache
                     ServerStats ss = stats.getSingleServerStat(server);
                     totalResponseTime += ss.getResponseTimeAvg();
@@ -262,13 +262,13 @@ public class WeightedResponseTimeRule extends RoundRobinRule {
                 // weight for each server is (sum of responseTime of all servers - responseTime)
                 // so that the longer the response time, the less the weight and the less likely to be chosen
                 Double weightSoFar = 0.0;
-                
+                // 逐个计算每个实例的权重：weightSoFar + totalResponseTime - 实例的平均响应时间
                 // create new list and hot swap the reference
                 List<Double> finalWeights = new ArrayList<Double>();
                 for (Server server : nlb.getAllServers()) {
                     ServerStats ss = stats.getSingleServerStat(server);
                     double weight = totalResponseTime - ss.getResponseTimeAvg();
-                    weightSoFar += weight;
+                    weightSoFar += weight; // 每计算好一个权重需要累加到 weightSoFar 上供下一次计算使用
                     finalWeights.add(weightSoFar);   
                 }
                 setWeights(finalWeights);

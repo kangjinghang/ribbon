@@ -67,7 +67,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
     private static final String PREFIX = "LoadBalancer_";
 
     protected IRule rule = DEFAULT_RULE;
-
+    // 描述服务检查策略，IPingStrategy 默认实现采用了 SerialPingStrategy 实现
     protected IPingStrategy pingStrategy = DEFAULT_PING_STRATEGY;
 
     protected IPing ping = null;
@@ -119,7 +119,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
         this.name = DEFAULT_NAME;
         this.ping = null;
         setRule(DEFAULT_RULE);
-        setupPingTask();
+        setupPingTask();  // 方法内部会启动一个定时任务，默认每隔 10 秒执行一次
         lbStats = new LoadBalancerStats(DEFAULT_NAME);
     }
 
@@ -149,7 +149,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
         this.ping = ping;
         this.pingStrategy = pingStrategy;
         setRule(rule);
-        setupPingTask();
+        setupPingTask(); // 方法内部会启动一个定时任务，默认每隔 10 秒执行一次
         lbStats = stats;
         init();
     }
@@ -262,7 +262,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
             return false;
         }
     }
-
+    // 方法内部会启动一个定时任务，默认每隔 10 秒执行一次
     void setupPingTask() {
         if (canSkipPing()) {
             return;
@@ -272,7 +272,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
         }
         lbTimer = new ShutdownEnabledTimer("NFLoadBalancer-PingTimer-" + name,
                 true);
-        lbTimer.schedule(new PingTask(), 0, pingIntervalSeconds * 1000);
+        lbTimer.schedule(new PingTask(), 0, pingIntervalSeconds * 1000); // 启动一个定时任务 PingTask
         forceQuickPing();
     }
 
@@ -329,7 +329,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
             logger.debug("LoadBalancer [{}]:  pingIntervalSeconds set to {}",
         	    name, this.pingIntervalSeconds);
         }
-        setupPingTask(); // since ping data changed
+        setupPingTask(); // since ping data changed  // 方法内部会启动一个定时任务，默认每隔 10 秒执行一次
     }
 
     public int getPingInterval() {
@@ -370,7 +370,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
         if (ping != null) {
             if (!ping.equals(this.ping)) {
                 this.ping = ping;
-                setupPingTask(); // since ping data changed
+                setupPingTask(); // since ping data changed  // 方法内部会启动一个定时任务，默认每隔 10 秒执行一次
             }
         } else {
             this.ping = null;
@@ -431,7 +431,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
      * than once
      */
     @Override
-    public void addServers(List<Server> newServers) {
+    public void addServers(List<Server> newServers) { // 向负载均衡器中添加一个新的服务实例列表
         if (newServers != null && newServers.size() > 0) {
             try {
                 ArrayList<Server> newList = new ArrayList<Server>();
@@ -590,12 +590,12 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
     public List<Server> getServerList(boolean availableOnly) {
         return (availableOnly ? getReachableServers() : getAllServers());
     }
-
+    // 获取所有有效的服务实例列表
     @Override
     public List<Server> getReachableServers() {
         return Collections.unmodifiableList(upServerList);
     }
-
+    // 获取所有服务的实例列表
     @Override
     public List<Server> getAllServers() {
         return Collections.unmodifiableList(allServerList);
@@ -631,10 +631,10 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
      * @author stonse
      * 
      */
-    class PingTask extends TimerTask {
+    class PingTask extends TimerTask { // 检查 Server 是否有效，默认执行时间间隔为10秒
         public void run() {
             try {
-            	new Pinger(pingStrategy).runPinger();
+            	new Pinger(pingStrategy).runPinger(); // 策略模式，通过传入的值决定是用哪个 ping 去完成
             } catch (Exception e) {
                 logger.error("LoadBalancer [{}]: Error pinging", name, e);
             }
@@ -679,7 +679,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
                 allLock.unlock();
 
                 int numCandidates = allServers.length;
-                results = pingerStrategy.pingServers(ping, allServers);
+                results = pingerStrategy.pingServers(ping, allServers); // 唯一的实现 SerialPingStrategy ，重点是这一行代码
 
                 final List<Server> newUpList = new ArrayList<Server>();
                 final List<Server> changedServers = new ArrayList<Server>();
@@ -743,7 +743,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
             return null;
         } else {
             try {
-                return rule.choose(key);
+                return rule.choose(key); // 调用 IRule 中的 choose 方法来找到一个具体的服务实例,默认实现是 RoundRobinRule
             } catch (Exception e) {
                 logger.warn("LoadBalancer [{}]:  Error choosing server for key {}", name, key, e);
                 return null;
@@ -777,7 +777,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
 
         notifyServerStatusChangeListener(singleton(server));
     }
-
+    // 标记一个服务是否有效，标记方式为调用 Server 对象的 setAlive 方法设置 isAliveFlag 属性为 false
     public void markServerDown(String id) {
         boolean triggered = false;
 
@@ -884,7 +884,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
      * serially, which may not be desirable, if your <c>IPing</c>
      * implementation is slow, or you have large number of servers.
      */
-    private static class SerialPingStrategy implements IPingStrategy {
+    private static class SerialPingStrategy implements IPingStrategy { // 默认是线型轮询，可以自己去扩展为并行
 
         @Override
         public boolean[] pingServers(IPing ping, Server[] servers) {
@@ -909,7 +909,7 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
                     // this
                     // serially
                     if (ping != null) {
-                        results[i] = ping.isAlive(servers[i]);
+                        results[i] = ping.isAlive(servers[i]); // 循环调用
                     }
                 } catch (Exception e) {
                     logger.error("Exception while pinging Server: '{}'", servers[i], e);

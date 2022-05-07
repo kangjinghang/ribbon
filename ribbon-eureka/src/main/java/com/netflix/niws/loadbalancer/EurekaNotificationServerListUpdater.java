@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author David Liu
  */
-public class EurekaNotificationServerListUpdater implements ServerListUpdater {
+public class EurekaNotificationServerListUpdater implements ServerListUpdater { // 利用 Eureka 的事件监听器来驱动服务列表的更新操作
 
     private static final Logger logger = LoggerFactory.getLogger(EurekaNotificationServerListUpdater.class);
 

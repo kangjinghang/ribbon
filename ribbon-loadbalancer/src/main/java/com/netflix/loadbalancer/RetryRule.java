@@ -26,7 +26,7 @@ import com.netflix.client.config.IClientConfig;
  * @author stonse
  * 
  */
-public class RetryRule extends AbstractLoadBalancerRule {
+public class RetryRule extends AbstractLoadBalancerRule { // 根据轮询的方式重试。默认重试毫秒数 500。考虑到定义的规则可以串行多个，这个重试规则允许在现有规则中添加重试逻辑。先按照轮询策略获取服务，获取失败，则在设定时间内重试，获取可用服务
 	IRule subRule = new RoundRobinRule();
 	long maxRetryMillis = 500;
 
@@ -82,9 +82,9 @@ public class RetryRule extends AbstractLoadBalancerRule {
 		Server answer = null;
 
 		answer = subRule.choose(key);
-
+		// 若期间能够选择到具体的服务实例就返回
 		if (((answer == null) || (!answer.isAlive()))
-				&& (System.currentTimeMillis() < deadline)) {
+				&& (System.currentTimeMillis() < deadline)) { // 若选择不到就根据设置的尝试结束时间为阈值（maxRetryMillis参数定义的值 + choose方法开始执行的时间戳），当超过该阈值后就返回null。
 
 			InterruptTask task = new InterruptTask(deadline
 					- System.currentTimeMillis());
